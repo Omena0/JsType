@@ -3,79 +3,123 @@
 import rjsmin
 import sys
 
+def concat(*args):
+    args = [arg for arg in args if arg]  # Filter out empty strings
+    return f'String().concat({",".join(args)})'
+
+counts = [0]*10
 def _getNumber(num):
+    counts[num] += 1
     match num:
         case 0:
             return "Number()"
         case 1:
-            return "Number(Boolean(String(Number())))"
+            return "Number.length"
         case 2:
             return "Object.is.length"
         case 3:
-            return "String(Number.NaN).length"
+            return "Map.name.length"
         case 4:
-            return "String.call.name.length"
+            return "String(null).length"
         case 5:
-            return "String.apply.name.length"
+            return "Map.apply.name.length"
         case 6:
-            return "String(Number.name).length"
+            return "Number.name.length"
         case 7:
-            return "String.valueOf.name.length"
+            return "Map.groupBy.name.length"
         case 8:
-            return "String(Number.POSITIVE_INFINITY).length"
+            return "Map.constructor.name.length"
         case 9:
-            return "String(Number.z).length"
-        case _:
-            return f"Object.is.length.toPrecision({getNumber(num-1)}).length"
-
+            return "String(Map.z).length"
 
 def getNumber(num):
+    if num in range(10):
+        return _getNumber(num)
+
+    match int(num):
+        case 34:
+            return f"String(String().at).substr({getNumber(1)}).length"
+        case 35:
+            return "String(String().at).length"
+        case 37:
+            return 'String(Map.call).length'
+        case 38:
+            return "String(Number.isNaN).length"
+        case 39:
+            return "String(Number)"
+        case 41:
+            return 'String(Map.constructor).length'
+        case 46:
+            return f'String(Map.propertyIsEnumerable).substr({getNumber(7)}).length'
+        case 53:
+            return "String(Map.propertyIsEnumerable).length"
+
     result = []
+
     for i in str(num):
-        match int(i):
-            case 35:
-                i = "String(String().at).length"
-            case 38:
-                i = "String(Number.isNaN).length"
-            case 39:
-                i = "String(Number)"
-            case _:
-                i = _getNumber(int(i))
+        i = _getNumber(int(i))
 
         result.append(i)
 
-    if len(result) > 1: return f'Number(String().concat({','.join(result)}))'
-    else: return result[0]
+    if len(result) > 1:
+        result = f'Number({concat(*result)})'
+    else:
+        result = result[0]
 
+    return result
 
-def getLetter(letter):
-    match letter:
+def getChar(char):
+    match char:
         case 'a':
-            return f"String().at.name.at()"
+            return f'String().at.name.at()'
         case 'b':
-            return f"String().big.name.at()"
+            return f'Map.bind.name.at()'
         case 'c':
             return f'String.call.name.at()'
         case 'd':
-            return f'String(Number.z).at({getNumber(2)})'
+            return f'String(Map.z).at({getNumber(2)})'
         case 'e':
-            return f'String(Number.z).at({getNumber(3)})'
+            return f'String(Map.z).at({getNumber(3)})'
         case 'f':
-            return f'String(Number.z).at({getNumber(4)})'
+            return f'String(Map.z).at({getNumber(4)})'
+        case 'g':
+            return f'String(Map.groupBy).at({getNumber(9)})'
         case 'h':
             return f'String.hasOwnProperty.name.at()'
+        case 'i':
+            return f'String(Map.isPrototypeOf).at({getNumber(5)})'
+        case 'n':
+            return f'String(Map.z).at({getNumber(6)})'
+        case 'l':
+            return f'String(Map.call).substr({getNumber(9)}).at({getNumber(2)})'
+        case '(':
+            return f'String(Map).substr({getNumber(9)}).at({getNumber(3)})'
+        case ')':
+            return f'String(Map).substr({getNumber(9)}).at({getNumber(4)})'
+        case 'B':
+            return f'Map.bind.name.toUpperCase().at()'
+        case ' ':
+            return f'String(Map.call).at({getNumber(8)})'
+        case 's':
+            return 'String.name.at().toLowerCase()'
+        case 'o':
+            return 'Object.name.toLowerCase().at()'
+        case '.':
+            return f'String(Number.EPSILON).at({getNumber(1)})'
 
         case _:
-            return f'String.fromCharCode({getNumber(ord(letter))})'
+            out =  f'String.fromCharCode({getNumber(ord(char))})'
+            print(char, len(out), out)
+            return out
 
 
 def getString(string:str):
     result = []
     for i in string:
-        i = getLetter(i)
+        i = getChar(i)
         result.append(i)
 
-    if len(result) > 1: return f'String(String().concat({','.join(result)}))'
+    if len(result) > 1: return concat(*result)
     else: return result[0]
 
 
@@ -85,4 +129,7 @@ def compile(src:str):
 
 with open(sys.argv[1], 'r') as in_file:
     with open(sys.argv[2], 'w') as out_file:
-        out_file.write(compile(rjsmin.jsmin(in_file.read())))
+        out = compile(rjsmin.jsmin(in_file.read()))
+        print(len(out))
+        print(counts)
+        out_file.write(out)
